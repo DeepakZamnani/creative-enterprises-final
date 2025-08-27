@@ -12,6 +12,7 @@ import { loadFontsFromTailwindSource } from './plugins/loadFontsFromTailwindSour
 import { nextPublicProcessEnv } from './plugins/nextPublicProcessEnv';
 import { restart } from './plugins/restart';
 import { restartEnvFileChange } from './plugins/restartEnvFileChange';
+import { createHtmlPlugin } from 'vite-plugin-html'
 
 export default defineConfig({
   // Keep them available via import.meta.env.NEXT_PUBLIC_*
@@ -33,6 +34,14 @@ export default defineConfig({
   },
   logLevel: 'info',
   plugins: [
+    createHtmlPlugin({
+      inject: {
+        data: {
+          title: 'Creative Enterprises',
+          logo: '/public/ce_logo.png', // place this inside `public/logo.png`
+        },
+      },
+    }),
     nextPublicProcessEnv(),
     restartEnvFileChange(),
     reactRouterHonoServer({
