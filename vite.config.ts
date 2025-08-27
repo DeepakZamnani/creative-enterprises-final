@@ -1,9 +1,9 @@
 import path from 'node:path';
 import { reactRouter } from '@react-router/dev/vite';
-import { reactRouterHonoServer } from 'react-router-hono-server/dev';
 import { defineConfig } from 'vite';
 import babel from 'vite-plugin-babel';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { createHtmlPlugin } from 'vite-plugin-html';
 import { addRenderIds } from './plugins/addRenderIds';
 import { aliases } from './plugins/aliases';
 import consoleToParent from './plugins/console-to-parent';
@@ -12,14 +12,10 @@ import { loadFontsFromTailwindSource } from './plugins/loadFontsFromTailwindSour
 import { nextPublicProcessEnv } from './plugins/nextPublicProcessEnv';
 import { restart } from './plugins/restart';
 import { restartEnvFileChange } from './plugins/restartEnvFileChange';
-import { createHtmlPlugin } from 'vite-plugin-html'
 
-export default defineConfig({
-  // Keep them available via import.meta.env.NEXT_PUBLIC_*
+export default defineConfig(({ mode }) => ({
   envPrefix: 'NEXT_PUBLIC_',
   optimizeDeps: {
-    // Explicitly include fast-glob, since it gets dynamically imported and we
-    // don't want that to cause a re-bundle.
     include: ['fast-glob', 'lucide-react'],
     exclude: [
       '@hono/auth-js/react',
@@ -35,24 +31,22 @@ export default defineConfig({
   logLevel: 'info',
   plugins: [
     createHtmlPlugin({
+      minify: true,
       inject: {
         data: {
           title: 'Creative Enterprises',
-          logo: '/public/ce_logo.png', // place this inside `public/logo.png`
+          logo: '/ce_logo.png', // Ensure this exists in public/
         },
       },
     }),
     nextPublicProcessEnv(),
     restartEnvFileChange(),
-    reactRouterHonoServer({
-      serverEntryPoint: './__create/index.ts',
-      runtime: 'node',
-    }),
+    // Disable reactRouterHonoServer for static SPA
     babel({
-      include: ['src/**/*.{js,jsx,ts,tsx}'], // or RegExp: /src\/.*\.[tj]sx?$/
-      exclude: /node_modules/, // skip everything else
+      include: ['src/**/*.{js,jsx,ts,tsx}'],
+      exclude: /node_modules/,
       babelConfig: {
-        babelrc: false, // don’t merge other Babel files
+        babelrc: false,
         configFile: false,
         plugins: ['styled-jsx/babel'],
       },
@@ -70,7 +64,7 @@ export default defineConfig({
     consoleToParent(),
     loadFontsFromTailwindSource(),
     addRenderIds(),
-    reactRouter(),
+    reactRouter(), // Keep for file-based routing
     tsconfigPaths(),
     aliases(),
     layoutWrapperPlugin(),
@@ -86,6 +80,17 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
+      },
+    },
+  },
   clearScreen: false,
   server: {
     allowedHosts: true,
@@ -98,4 +103,4 @@ export default defineConfig({
       clientFiles: ['./src/app/**/*', './src/app/root.tsx', './src/app/routes.ts'],
     },
   },
-});
+}));
